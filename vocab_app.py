@@ -7,11 +7,15 @@ from PIL import Image
 from gtts import gTTS
 
 st.title("📝 英単語タイピングゲーム")
-st.write("日本語の意味を見て、正しい英単語をタイピングしよう！")
+st.write("英単語のイメージをアップすると、タイピングがはじまります。日本語の意味を見て、正しい英単語をタイピングしよう！")
 
-# 1. APIキーの設定
-with st.sidebar:
-    api_key = st.text_input("Gemini API Key", type="password")
+# 1. APIキーの設定（クラウドのSecretsから自動で読み込む）
+if "GEMINI_API_KEY" in st.secrets:
+    api_key = st.secrets["GEMINI_API_KEY"]
+else:
+    # 念のため、お家でのテスト用に手動入力欄も残しておきます
+    with st.sidebar:
+        api_key = st.text_input("Gemini API Key", type="password")
 
 # 2. アプリの状態管理（セッション状態の初期化）
 if "word_list" not in st.session_state:
