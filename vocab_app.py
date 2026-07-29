@@ -6,7 +6,7 @@ from google import genai
 from PIL import Image
 from gtts import gTTS
 
-st.title("📝 new clown 英単語タイピングゲーム")
+st.title("📝 英単語タイピングゲーム")
 st.write("日本語の意味を見て、正しい英単語をタイピングしよう！")
 
 # 1. APIキーの設定
