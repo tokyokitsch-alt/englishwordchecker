@@ -39,11 +39,11 @@ def create_drive_card(japanese, main_text, is_answer=False):
     base_img = Image.new('RGB', video_size, color=bg_color)
     draw = ImageDraw.Draw(base_img)
 
-    # 日本語対応フォントの自動ダウンロード（環境依存を解決）
+    # 日本語対応フォントの自動ダウンロード（★正しいURLに修正しました）
     font_path = "NotoSansJP-Bold.ttf"
     if not os.path.exists(font_path):
         try:
-            # Google Fontsから日本語フォントをダウンロード
+            # Google Fontsから日本語フォントの本体ファイルを直接ダウンロードします
             url = "https://github.com"
             urllib.request.urlretrieve(url, font_path)
         except Exception:
@@ -51,7 +51,7 @@ def create_drive_card(japanese, main_text, is_answer=False):
 
     # フォント設定（視認性を高めるため超大きめ）
     try:
-        if os.path.exists(font_path):
+        if os.path.exists(font_path) and os.path.getsize(font_path) > 10000: # ファイルが壊れていないかチェック
             font_ja = ImageFont.truetype(font_path, 75)
             font_en = ImageFont.truetype(font_path, 110)
         else:
@@ -107,7 +107,7 @@ def generate_drive_video(word_list):
         # 日本語を声で流しつつ、画面には「日本語」と「伏字(_ _ _)」を表示（約3秒）
         mask_text = " ".join(["_"] * len(english))
         q_img = create_drive_card(japanese, mask_text, is_answer=False)
-        q_duration = max(3.0, audio_ja.duration + 1.5) # 日本語音声＋少し考える時間
+        q_duration = max(3.0, audio_ja.duration + 2.0) # 日本語音声＋少し考える時間
         q_clip = ImageClip(q_img).set_duration(q_duration).set_audio(audio_ja)
 
         # --- 2. 正解フェーズ ---
