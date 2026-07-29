@@ -40,7 +40,7 @@ def create_drive_card(japanese, main_text, is_answer=False):
     draw = ImageDraw.Draw(base_img)
 
     # 日本語対応フォントの自動ダウンロード（★完全に正しいURLと新しい名前に直しました）
-    font_path = "NotoSansJP-Final.ttf"
+    font_path = "NotoSansJP-Ultimate.ttf"
     if not os.path.exists(font_path):
         try:
             # Google Fontsから日本語フォントの本体ファイルを直接取得します
