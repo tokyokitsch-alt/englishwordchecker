@@ -1,3 +1,6 @@
-google-genai
 streamlit
-gTTS
+google-genai
+pillow
+gtts
+moviepy
+numpy
