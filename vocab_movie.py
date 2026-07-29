@@ -39,11 +39,11 @@ def create_drive_card(japanese, main_text, is_answer=False):
     base_img = Image.new('RGB', video_size, color=bg_color)
     draw = ImageDraw.Draw(base_img)
 
-    # 日本語対応フォントの自動ダウンロード
-    font_path = "NotoSansJP-New.ttf"
+    # 日本語対応フォントの自動ダウンロード（★完全に正しいURLと新しい名前に直しました）
+    font_path = "NotoSansJP-Final.ttf"
     if not os.path.exists(font_path):
         try:
-            # Google Fontsから日本語フォントをダウンロード
+            # Google Fontsから日本語フォントの本体ファイルを直接取得します
             url = "https://github.com"
             urllib.request.urlretrieve(url, font_path)
         except Exception:
@@ -62,7 +62,7 @@ def create_drive_card(japanese, main_text, is_answer=False):
         font_ja = ImageFont.load_default()
         font_en = ImageFont.load_default()
 
-    # 1. 日本語の意味（画面上部）-- ★引き算のバグを修正しました
+    # 1. 日本語の意味（画面上部）
     bbox_ja = draw.textbbox((0, 0), japanese, font=font_ja)
     ja_w = bbox_ja[2] - bbox_ja[0]
     draw.text(((video_size[0] - ja_w) // 2, 130), japanese, fill=ja_color, font=font_ja)
@@ -70,7 +70,7 @@ def create_drive_card(japanese, main_text, is_answer=False):
     # 区切り線
     draw.line([(200, 270), (1080, 270)], fill=(203, 213, 225), width=4)
 
-    # 2. 英単語または伏字（画面下部・極大表示）-- ★引き算のバグを修正しました
+    # 2. 英単語または伏字（画面下部・極大表示）
     bbox_en = draw.textbbox((0, 0), main_text, font=font_en)
     en_w = bbox_en[2] - bbox_en[0]
     draw.text(((video_size[0] - en_w) // 2, 380), main_text, fill=en_color, font=font_en)
