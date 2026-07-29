@@ -3,6 +3,7 @@ import os
 import json
 import io
 import tempfile
+import urllib.request
 import numpy as np
 from google import genai
 from PIL import Image, ImageDraw, ImageFont
@@ -38,10 +39,25 @@ def create_drive_card(japanese, main_text, is_answer=False):
     base_img = Image.new('RGB', video_size, color=bg_color)
     draw = ImageDraw.Draw(base_img)
 
+    # 日本語対応フォントの自動ダウンロード（環境依存を解決）
+    font_path = "NotoSansJP-Bold.ttf"
+    if not os.path.exists(font_path):
+        try:
+            # Google Fontsから日本語フォントをダウンロード
+            url = "https://github.com"
+            urllib.request.urlretrieve(url, font_path)
+        except Exception:
+            pass
+
     # フォント設定（視認性を高めるため超大きめ）
     try:
-        font_ja = ImageFont.truetype("msgothic.ttc", 75)
-        font_en = ImageFont.truetype("arial.ttf", 110)
+        if os.path.exists(font_path):
+            font_ja = ImageFont.truetype(font_path, 75)
+            font_en = ImageFont.truetype(font_path, 110)
+        else:
+            # 万が一ダウンロードに失敗した場合はシステムのフォントを試す
+            font_ja = ImageFont.truetype("msgothic.ttc", 75)
+            font_en = ImageFont.truetype("arial.ttf", 110)
     except IOError:
         font_ja = ImageFont.load_default()
         font_en = ImageFont.load_default()
