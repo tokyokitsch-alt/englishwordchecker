@@ -29,31 +29,24 @@ if "word_list" not in st.session_state:
     st.session_state.word_list = []
 
 # --------------------------------------------------
-# 車内学習向け：動画カード画像生成関数（修正確認用・色変更版）
+# 車内学習向け：動画カード画像生成関数（可変フォント対応版）
 # --------------------------------------------------
 def create_drive_card(japanese, main_text, is_answer=False):
-    """【確認用】背景を黄色、日本語を青にして修正の反映をチェックする関数"""
-    video_size = (1280, 720) # 16:9
+    """車内の画面で見やすいハイコントラスト・超大型文字のカード画像を生成"""
+    video_size = (1280, 720) # 16:9 (ナビ画面に最適)
     
-    # 🔴 変更点：最新コードが反映されたか確認するため、背景と文字色を派手に変更
-    bg_color = (254, 240, 138)  # 鮮やかなパステルイエロー（修正確認用）
-    ja_color = (29, 78, 216)    # 明るいロイヤルブルー（修正確認用）
+    bg_color = (255, 255, 255) if not is_answer else (240, 249, 255)
+    ja_color = (15, 23, 42)       # 濃いネイビー
     en_color = (225, 29, 72) if is_answer else (100, 116, 139)
 
     base_img = Image.new('RGB', video_size, color=bg_color)
     draw = ImageDraw.Draw(base_img)
 
-    # Google Fontsの公式リポジトリから本物のTTFファイルを直接取得
-    font_path = "NotoSansJP-Bold.ttf"
-    if not os.path.exists(font_path):
-        try:
-            url = "https://githubusercontent.com"
-            urllib.request.urlretrieve(url, font_path)
-        except Exception:
-            pass
+    # 🟢 変更点：アップロードした可変フォントのファイル名を正しく指定
+    font_path = "NotoSansJP-VariableFont_wght.ttf"
 
     # フォントの読み込み
-    if os.path.exists(font_path) and os.path.getsize(font_path) > 1000:
+    if os.path.exists(font_path):
         font_ja = ImageFont.truetype(font_path, 75)
         font_en = ImageFont.truetype(font_path, 110)
     else:
@@ -62,7 +55,7 @@ def create_drive_card(japanese, main_text, is_answer=False):
 
     # 1. 日本語の意味（画面上部中央）
     bbox_ja = draw.textbbox((0, 0), japanese, font=font_ja)
-    ja_w = bbox_ja[2] - bbox_ja[0]  # 正しいインデックスで幅を計算
+    ja_w = bbox_ja[2] - bbox_ja[0]
     draw.text(((video_size[0] - ja_w) // 2, 130), japanese, fill=ja_color, font=font_ja)
 
     # 区切り線
@@ -70,10 +63,11 @@ def create_drive_card(japanese, main_text, is_answer=False):
 
     # 2. 英単語または伏字（画面下部中央）
     bbox_en = draw.textbbox((0, 0), main_text, font=font_en)
-    en_w = bbox_en[2] - bbox_en[0]  # 正しいインデックスで幅を計算
+    en_w = bbox_en[2] - bbox_en[0]
     draw.text(((video_size[0] - en_w) // 2, 380), main_text, fill=en_color, font=font_en)
 
     return np.array(base_img)
+
 
 
 # --------------------------------------------------
