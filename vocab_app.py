@@ -81,29 +81,61 @@ if st.session_state.word_list:
         current_word = st.session_state.word_list[idx]
         
         st.subheader(f"🔥 チャレンジ第 {st.session_state.round_num} 週目")
-        st.write(f"問題 {idx + 1} / {total_words}")
+        
+        # 🟢 改善：正解率と進捗ゲージの計算・表示
+        # 解き終わった問題数（現在の問題を含む）
+        answered_q = idx + 1 
+        
+        # 画面上部に綺麗に並べて表示
+        col_info1, col_info2, col_info3 = st.columns(3)
+        with col_info1:
+            st.metric(label="📊 進捗", value=f"{idx + 1} / {total_words} 問")
+        with col_info2:
+            st.metric(label="🎯 正解数", value=f"{st.session_state.correct_count} 問")
+        with col_info3:
+            # まだ1問も判定していないときは0%、それ以外はリアルタイム計算
+            # ただし、現在の問題が判定前なら「これまでに解いた問題数」で割る
+            divisor = idx if not st.session_state.checked else idx + 1
+            if divisor > 0:
+                accuracy = int((st.session_state.correct_count / divisor) * 100)
+            else:
+                accuracy = 100 if st.session_state.correct_count > 0 or idx == 0 else 0
+            st.metric(label="💯 現在の正解率", value=f"{accuracy} %")
+            
+        # 視覚的な進行バー
+        st.progress((idx) / total_words)
+        
         st.info(f"🤔 この日本語を英語に直すと？: **{current_word['japanese']}**")
         
-        # タイピング入力欄
-        user_ans = st.text_input(
-            "英語を小文字で入力してください：", 
-            key=f"input_{st.session_state.round_num}_{idx}", 
-            value=st.session_state.user_input
-        ).strip().lower()
+        # フォームを使って入力と判定を1つのイベントにまとめる
+        with st.form(key=f"quiz_form_{st.session_state.round_num}_{idx}", clear_on_submit=False):
+            user_ans = st.text_input(
+                "英語を小文字で入力してください：", 
+                value=st.session_state.user_input,
+                disabled=st.session_state.checked
+            ).strip().lower()
+            
+            submit_button = st.form_submit_button(label="🎯 判定する" if not st.session_state.checked else "🔒 判定済み")
+
+        # 判定ボタンが押されたときの処理
+        if submit_button and not st.session_state.checked:
+            if user_ans == "":
+                st.warning("文字を入力してください。")
+            else:
+                st.session_state.user_input = user_ans
+                st.session_state.checked = True
+                
+                # 🟢 追加：ここで正解数を判定してカウント
+                correct_ans = current_word['english'].strip().lower()
+                if user_ans == correct_ans:
+                    st.session_state.correct_count += 1
+                st.rerun()
         
-        if not st.session_state.checked:
-            if st.button("🎯 判定する") or user_ans:
-                if user_ans == "":
-                    st.warning("文字を入力してください。")
-                else:
-                    st.session_state.user_input = user_ans
-                    st.session_state.checked = True
-                    st.rerun()
-        else:
+        # 判定後の表示と「次の問題」ボタン
+        if st.session_state.checked:
             correct_ans = current_word['english'].strip().lower()
             
             if st.session_state.user_input == correct_ans:
-                # 🌟 正解時に星マークを表示
                 st.success(f"🎉 正解！ ⭐⭐⭐ 【 {current_word['english']} 】 ⭐⭐⭐")
             else:
                 st.error(f"❌ 残念！ 正解は 【 {current_word['english']} 】 でした。")
@@ -117,24 +149,34 @@ if st.session_state.word_list:
                 tts.write_to_fp(sound_file)
                 sound_file.seek(0)
                 st.audio(sound_file, format="audio/mp3", autoplay=True)
-            except Exception as e:
+            except Exception:
                 pass
             
-            if st.button("➡️ 次の問題へ"):
-                st.session_state.current_index += 1
-                st.session_state.checked = False
-                st.session_state.user_input = ""
-                st.rerun()
+            with st.form(key=f"next_form_{idx}"):
+                next_button = st.form_submit_button(label="➡️ 次の問題へ (Enter)")
+                if next_button:
+                    st.session_state.current_index += 1
+                    st.session_state.checked = False
+                    st.session_state.user_input = ""
+                    st.rerun()
                 
     else:
+        # 🟢 リトライ（周回）に入るときの処理も修正（正解数をリセット）
         if st.session_state.wrong_words:
-            st.warning(f"📝 第 {st.session_state.round_num} 週目が終了！ 間違えた単語が {len(st.session_state.wrong_words)} 問あります。")
-            st.write("覚えるまでもう一度チャレンジしよう！")
+            # 最終的なその週の正解率を表示
+            final_accuracy = int((st.session_state.correct_count / total_words) * 100)
+            st.warning(f"📝 第 {st.session_state.round_num} 週目が終了！ 正解率: {final_accuracy}%")
+            st.write(f"間違えた単語が {len(st.session_state.wrong_words)} 問あります。覚えるまでもう一度チャレンジしよう！")
             
-            if st.button("🔄 間違えた単語だけで再挑戦！"):
-                st.session_state.word_list = list(st.session_state.wrong_words)
+            if st.button("🔄 間開けた単語だけで再挑戦！"):
+                next_words = list(st.session_state.wrong_words)
+                if st.session_state.shuffle_mode:
+                    random.shuffle(next_words)
+                    
+                st.session_state.word_list = next_words
                 st.session_state.wrong_words = []
                 st.session_state.current_index = 0
+                st.session_state.correct_count = 0  # 🟢 次の周回のために正解数をリセット
                 st.session_state.round_num += 1
                 st.session_state.checked = False
                 st.session_state.user_input = ""
@@ -147,7 +189,9 @@ if st.session_state.word_list:
                 st.session_state.word_list = []
                 st.session_state.wrong_words = []
                 st.session_state.current_index = 0
+                st.session_state.correct_count = 0  # 🟢 リセット
                 st.session_state.round_num = 1
                 st.session_state.checked = False
                 st.session_state.user_input = ""
                 st.rerun()
+
