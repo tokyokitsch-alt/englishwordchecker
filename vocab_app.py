@@ -32,6 +32,8 @@ if "round_num" not in st.session_state:
     st.session_state.round_num = 1
 if "correct_count" not in st.session_state:
     st.session_state.correct_count = 0
+if "shuffle_mode" not in st.session_state:
+    st.session_state.shuffle_mode = False
 
 # 3. 単語リスト画像のアップロード
 uploaded_file = st.file_uploader("紙の単語リストの画像をアップロードしてください", type=["jpg", "jpeg", "png"])
