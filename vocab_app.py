@@ -170,7 +170,7 @@ if st.session_state.word_list:
             st.warning(f"📝 第 {st.session_state.round_num} 週目が終了！ 正解率: {final_accuracy}%")
             st.write(f"間違えた単語が {len(st.session_state.wrong_words)} 問あります。覚えるまでもう一度チャレンジしよう！")
             
-            if st.button("🔄 間開けた単語だけで再挑戦！"):
+            if st.button("🔄 間違った単語だけで再挑戦！"):
                 next_words = list(st.session_state.wrong_words)
                 if st.session_state.shuffle_mode:
                     random.shuffle(next_words)
