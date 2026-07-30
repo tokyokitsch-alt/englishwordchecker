@@ -1,14 +1,18 @@
-import streamlit as st
-import os
-import json
+# --- 標準ライブラリ (Python内蔵) ---
 import io
+import json
+import os
 import tempfile
 import urllib.request
-import numpy as np
+
+# --- 外部ライブラリ (requirements.txtに記載したもの) ---
 from google import genai
-from PIL import Image, ImageDraw, ImageFont
 from gtts import gTTS
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
+from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
+import streamlit as st
+
 
 st.title("🚗 車で流せる！英単語動画メーカー & タイピング")
 st.write("紙の単語帳画像から、ドライブ中に車内で流せる英語学習動画を自動作成します。")
@@ -25,57 +29,52 @@ if "word_list" not in st.session_state:
     st.session_state.word_list = []
 
 # --------------------------------------------------
-# 車内学習向け：動画カード画像生成関数
+# 車内学習向け：動画カード画像生成関数（修正版）
 # --------------------------------------------------
 def create_drive_card(japanese, main_text, is_answer=False):
     """車内の画面で見やすいハイコントラスト・超大型文字のカード画像を生成"""
-    video_size = (1280, 720) # 16:9 (車のナビ・モニターに最適)
+    video_size = (1280, 720) # 16:9 (ナビ画面に最適)
     
-    # 背景と文字色（くっきり見やすいコントラスト）
-    bg_color = (255, 255, 255) if not is_answer else (240, 249, 255) # 正解時はうっすら水色
-    ja_color = (15, 23, 42)       # 濃いネイビー（日本語）
-    en_color = (225, 29, 72) if is_answer else (100, 116, 139) # 正解英単語は赤みのある色で強調
+    # 背景と文字色（くっきり見やすい高コントラスト）
+    bg_color = (255, 255, 255) if not is_answer else (240, 249, 255)
+    ja_color = (15, 23, 42)       # 濃いネイビー
+    en_color = (225, 29, 72) if is_answer else (100, 116, 139) # 正解時は赤で強調
 
     base_img = Image.new('RGB', video_size, color=bg_color)
     draw = ImageDraw.Draw(base_img)
 
-    # 日本語対応フォントの自動ダウンロード（★完全に正しいURLと新しい名前に直しました）
-    font_path = "NotoSansJP-Ultimate.ttf"
+    # Google Fontsの公式リポジトリから本物のTTFファイルを直接取得（全OS・クラウド対応）
+    font_path = "NotoSansJP-Bold.ttf"
     if not os.path.exists(font_path):
         try:
-            # Google Fontsから日本語フォントの本体ファイルを直接取得します
-            url = "https://github.com"
+            url = "https://githubusercontent.com"
             urllib.request.urlretrieve(url, font_path)
         except Exception:
             pass
 
-    # フォント設定（視認性を高めるため超大きめ）
-    try:
-        if os.path.exists(font_path) and os.path.getsize(font_path) > 10000:
-            font_ja = ImageFont.truetype(font_path, 75)
-            font_en = ImageFont.truetype(font_path, 110)
-        else:
-            # 万が一ダウンロードに失敗した場合はシステムのフォントを試す
-            font_ja = ImageFont.truetype("msgothic.ttc", 75)
-            font_en = ImageFont.truetype("arial.ttf", 110)
-    except IOError:
+    # フォントの読み込み（失敗時はデフォルトにフォールバック）
+    if os.path.exists(font_path) and os.path.getsize(font_path) > 1000:
+        font_ja = ImageFont.truetype(font_path, 75)
+        font_en = ImageFont.truetype(font_path, 110)
+    else:
         font_ja = ImageFont.load_default()
         font_en = ImageFont.load_default()
 
-    # 1. 日本語の意味（画面上部）
+    # 1. 日本語の意味（画面上部中央に配置）
     bbox_ja = draw.textbbox((0, 0), japanese, font=font_ja)
-    ja_w = bbox_ja[2] - bbox_ja[0]
+    ja_w = bbox_ja[2] - bbox_ja[0]  # 右端(2) - 左端(0) で正しい幅を計算
     draw.text(((video_size[0] - ja_w) // 2, 130), japanese, fill=ja_color, font=font_ja)
 
     # 区切り線
     draw.line([(200, 270), (1080, 270)], fill=(203, 213, 225), width=4)
 
-    # 2. 英単語または伏字（画面下部・極大表示）
+    # 2. 英単語または伏字（画面下部中央に極大表示）
     bbox_en = draw.textbbox((0, 0), main_text, font=font_en)
-    en_w = bbox_en[2] - bbox_en[0]
+    en_w = bbox_en[2] - bbox_en[0]  # 右端(2) - 左端(0) で正しい幅を計算
     draw.text(((video_size[0] - en_w) // 2, 380), main_text, fill=en_color, font=font_en)
 
     return np.array(base_img)
+
 
 # --------------------------------------------------
 # 車内学習向け：動画生成処理
