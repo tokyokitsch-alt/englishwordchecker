@@ -38,6 +38,19 @@ if "shuffle_mode" not in st.session_state:
 # 3. 単語リスト画像のアップロード
 uploaded_file = st.file_uploader("紙の単語リストの画像をアップロードしてください", type=["jpg", "jpeg", "png"])
 
+
+# 🟢 修正：画面のメインエリアに直接表示するコード
+st.header("⚙️ ゲーム設定")
+shuffle_on = st.checkbox("🔀 ランダムに出題する", value=st.session_state.shuffle_mode)
+
+if shuffle_on != st.session_state.shuffle_mode:
+    st.session_state.shuffle_mode = shuffle_on
+    if st.session_state.word_list and st.session_state.current_index == 0:
+        import random
+        random.shuffle(st.session_state.word_list)
+        st.rerun()
+
+
 if uploaded_file and not st.session_state.word_list:
     image = Image.open(uploaded_file)
     st.image(image, caption="アップロードされた画像", use_container_width=True)
