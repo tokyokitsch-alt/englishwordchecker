@@ -71,7 +71,7 @@ if uploaded_file and not st.session_state.word_list:
                     """
                     
                     response = client.models.generate_content(
-                        model='gemini-2.5-flash',
+                        model='gemini-1.5-flash',
                         contents=[image, prompt]
                     )
                     
