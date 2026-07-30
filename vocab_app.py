@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import json
 import io
+import random  # 🟢 修正：ランダム機能のエラーを防ぐため最上部に追加
 from google import genai
 from PIL import Image
 from gtts import gTTS
@@ -13,7 +14,6 @@ st.write("英単語のイメージをアップすると、タイピングがは�
 if "GEMINI_API_KEY" in st.secrets:
     api_key = st.secrets["GEMINI_API_KEY"]
 else:
-    # 念のため、お家でのテスト用に手動入力欄も残しておきます
     with st.sidebar:
         api_key = st.text_input("Gemini API Key", type="password")
 
@@ -35,21 +35,19 @@ if "correct_count" not in st.session_state:
 if "shuffle_mode" not in st.session_state:
     st.session_state.shuffle_mode = False
 
-# 3. 単語リスト画像のアップロード
-uploaded_file = st.file_uploader("紙の単語リストの画像をアップロードしてください", type=["jpg", "jpeg", "png"])
-
-
-# 🟢 修正：画面のメインエリアに直接表示するコード
+# 🟢 画面中央の分かりやすい場所に設定を配置
 st.header("⚙️ ゲーム設定")
 shuffle_on = st.checkbox("🔀 ランダムに出題する", value=st.session_state.shuffle_mode)
 
 if shuffle_on != st.session_state.shuffle_mode:
     st.session_state.shuffle_mode = shuffle_on
+    # まだ1問目を開く前なら、その場でシャッフルする
     if st.session_state.word_list and st.session_state.current_index == 0:
-        import random
         random.shuffle(st.session_state.word_list)
         st.rerun()
 
+# 3. 単語リスト画像のアップロード
+uploaded_file = st.file_uploader("紙の単語リストの画像をアップロードしてください", type=["jpg", "jpeg", "png"])
 
 if uploaded_file and not st.session_state.word_list:
     image = Image.open(uploaded_file)
@@ -78,12 +76,19 @@ if uploaded_file and not st.session_state.word_list:
                     )
                     
                     clean_text = response.text.replace("```json", "").replace("```", "").strip()
-                    st.session_state.word_list = json.loads(clean_text)
+                    parsed_words = json.loads(clean_text)
+                    
+                    # 🟢 画像読み込み時にも、ランダムがONなら即シャッフル
+                    if st.session_state.shuffle_mode:
+                        random.shuffle(parsed_words)
+                        
+                    st.session_state.word_list = parsed_words
                     st.session_state.current_index = 0
                     st.session_state.wrong_words = []
                     st.session_state.checked = False
                     st.session_state.user_input = ""
                     st.session_state.round_num = 1
+                    st.session_state.correct_count = 0
                     st.rerun()
                     
                 except Exception as e:
@@ -99,10 +104,6 @@ if st.session_state.word_list:
         
         st.subheader(f"🔥 チャレンジ第 {st.session_state.round_num} 週目")
         
-        # 🟢 改善：正解率と進捗ゲージの計算・表示
-        # 解き終わった問題数（現在の問題を含む）
-        answered_q = idx + 1 
-        
         # 画面上部に綺麗に並べて表示
         col_info1, col_info2, col_info3 = st.columns(3)
         with col_info1:
@@ -110,8 +111,6 @@ if st.session_state.word_list:
         with col_info2:
             st.metric(label="🎯 正解数", value=f"{st.session_state.correct_count} 問")
         with col_info3:
-            # まだ1問も判定していないときは0%、それ以外はリアルタイム計算
-            # ただし、現在の問題が判定前なら「これまでに解いた問題数」で割る
             divisor = idx if not st.session_state.checked else idx + 1
             if divisor > 0:
                 accuracy = int((st.session_state.correct_count / divisor) * 100)
@@ -142,7 +141,6 @@ if st.session_state.word_list:
                 st.session_state.user_input = user_ans
                 st.session_state.checked = True
                 
-                # 🟢 追加：ここで正解数を判定してカウント
                 correct_ans = current_word['english'].strip().lower()
                 if user_ans == correct_ans:
                     st.session_state.correct_count += 1
@@ -178,14 +176,13 @@ if st.session_state.word_list:
                     st.rerun()
                 
     else:
-        # 🟢 リトライ（周回）に入るときの処理も修正（正解数をリセット）
+        # 周回リトライ処理
         if st.session_state.wrong_words:
-            # 最終的なその週の正解率を表示
             final_accuracy = int((st.session_state.correct_count / total_words) * 100)
             st.warning(f"📝 第 {st.session_state.round_num} 週目が終了！ 正解率: {final_accuracy}%")
             st.write(f"間違えた単語が {len(st.session_state.wrong_words)} 問あります。覚えるまでもう一度チャレンジしよう！")
             
-            if st.button("🔄 間違った単語だけで再挑戦！"):
+            if st.button("🔄 間違えた単語だけで再挑戦！"):
                 next_words = list(st.session_state.wrong_words)
                 if st.session_state.shuffle_mode:
                     random.shuffle(next_words)
@@ -193,7 +190,7 @@ if st.session_state.word_list:
                 st.session_state.word_list = next_words
                 st.session_state.wrong_words = []
                 st.session_state.current_index = 0
-                st.session_state.correct_count = 0  # 🟢 次の周回のために正解数をリセット
+                st.session_state.correct_count = 0
                 st.session_state.round_num += 1
                 st.session_state.checked = False
                 st.session_state.user_input = ""
@@ -206,9 +203,8 @@ if st.session_state.word_list:
                 st.session_state.word_list = []
                 st.session_state.wrong_words = []
                 st.session_state.current_index = 0
-                st.session_state.correct_count = 0  # 🟢 リセット
+                st.session_state.correct_count = 0
                 st.session_state.round_num = 1
                 st.session_state.checked = False
                 st.session_state.user_input = ""
                 st.rerun()
-
