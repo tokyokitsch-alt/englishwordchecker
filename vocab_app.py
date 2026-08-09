@@ -2,10 +2,15 @@ import streamlit as st
 import os
 import json
 import io
-import random  # 🟢 修正：ランダム機能のエラーを防ぐため最上部に追加
+import random
 from google import genai
 from PIL import Image
 from gtts import gTTS
+
+from database import init_db
+
+# データベース初期化
+init_db()
 
 st.title("📝 英単語タイピングゲーム")
 st.write("英単語のイメージをアップすると、タイピングがはじまります。日本語の意味を見て、正しい英単語をタイピングしよう！")
