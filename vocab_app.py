@@ -7,7 +7,7 @@ from google import genai
 from PIL import Image
 from gtts import gTTS
 
-from database import init_db
+from database import init_db, save_question
 
 # データベース初期化
 init_db()
@@ -82,6 +82,20 @@ if uploaded_file and not st.session_state.word_list:
                     
                     clean_text = response.text.replace("```json", "").replace("```", "").strip()
                     parsed_words = json.loads(clean_text)
+
+                    # 読み取った単語をQUESTIONSテーブルへ保存
+                    for item in st.session_state.word_list:
+                        question_id = save_question(
+                            subject="english",
+                            lesson="",
+                            source="image_ocr",
+                            question=item["japanese"],
+                            answer=item["english"],
+                            mode="typing"
+                        )
+                    
+                        # 学習履歴と結びつけるためquestion_idを保持
+                        item["question_id"] = question_id
                     
                     # 🟢 画像読み込み時にも、ランダムがONなら即シャッフル
                     if st.session_state.shuffle_mode:
