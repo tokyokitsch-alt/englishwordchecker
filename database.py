@@ -64,3 +64,59 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+
+def save_question(
+    subject,
+    lesson,
+    source,
+    question,
+    answer,
+    mode="typing"
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 同じ問題がすでに登録されているか確認
+    cursor.execute("""
+        SELECT id
+        FROM questions
+        WHERE subject = ?
+          AND lesson = ?
+          AND question = ?
+          AND answer = ?
+    """, (subject, lesson, question, answer))
+
+    existing = cursor.fetchone()
+
+    if existing:
+        question_id = existing[0]
+
+    else:
+        cursor.execute("""
+            INSERT INTO questions (
+                subject,
+                lesson,
+                source,
+                question,
+                answer,
+                mode,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            subject,
+            lesson,
+            source,
+            question,
+            answer,
+            mode,
+            datetime.now().isoformat()
+        ))
+
+        question_id = cursor.lastrowid
+
+    conn.commit()
+    conn.close()
+
+    return question_id
