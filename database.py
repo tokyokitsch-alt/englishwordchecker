@@ -193,7 +193,9 @@ def save_study_history(
 
     conn.commit()
     conn.close()
-    def get_study_history():
+
+    
+def get_study_history():
     conn = get_connection()
     cursor = conn.cursor()
 
