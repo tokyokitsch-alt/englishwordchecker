@@ -193,3 +193,31 @@ def save_study_history(
 
     conn.commit()
     conn.close()
+    def get_study_history():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            study_history.id,
+            users.display_name,
+            questions.lesson,
+            questions.question,
+            questions.answer,
+            study_history.result,
+            study_history.user_answer,
+            study_history.studied_at,
+            study_history.study_round
+        FROM study_history
+        JOIN users
+            ON study_history.user_id = users.id
+        JOIN questions
+            ON study_history.question_id = questions.id
+        ORDER BY study_history.id DESC
+    """)
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return rows
