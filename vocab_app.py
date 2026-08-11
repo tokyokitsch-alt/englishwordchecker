@@ -15,7 +15,6 @@ from database import (
     get_study_history
 )
 
-
 # データベース初期化
 init_db()
 
