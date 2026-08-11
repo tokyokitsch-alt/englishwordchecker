@@ -120,3 +120,76 @@ def save_question(
     conn.close()
 
     return question_id
+
+def get_or_create_user(display_name="user01"):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 同じ名前のユーザーがいるか確認
+    cursor.execute("""
+        SELECT id
+        FROM users
+        WHERE display_name = ?
+    """, (display_name,))
+
+    existing = cursor.fetchone()
+
+    if existing:
+        user_id = existing[0]
+    else:
+        cursor.execute("""
+            INSERT INTO users (
+                display_name,
+                created_at
+            )
+            VALUES (?, ?)
+        """, (
+            display_name,
+            datetime.now().isoformat()
+        ))
+
+        user_id = cursor.lastrowid
+
+    conn.commit()
+    conn.close()
+
+    return user_id
+
+
+def save_study_history(
+    user_id,
+    question_id,
+    result,
+    user_answer,
+    mode="typing",
+    study_round=1,
+    review_date=None
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO study_history (
+            user_id,
+            question_id,
+            studied_at,
+            result,
+            user_answer,
+            review_date,
+            mode,
+            study_round
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        user_id,
+        question_id,
+        datetime.now().isoformat(),
+        result,
+        user_answer,
+        review_date,
+        mode,
+        study_round
+    ))
+
+    conn.commit()
+    conn.close()
