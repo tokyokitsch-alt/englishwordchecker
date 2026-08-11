@@ -94,23 +94,71 @@ if st.button("✨ 単語リストを読み込む"):
                     parsed_words = json.loads(clean_text)
 
                     # 読み取った単語をQUESTIONSテーブルへ保存
-                    for item in st.session_state.word_list:
+if uploaded_file and not st.session_state.word_list:
+    image = Image.open(uploaded_file)
+    st.image(
+        image,
+        caption="アップロードされた画像",
+        use_container_width=True
+    )
+
+    if st.button("✨ 単語リストを読み込む"):
+        if not lesson_name.strip():
+            st.warning("Lesson名・教材名を入力してください。")
+
+        elif not api_key:
+            st.error("APIキーを入力してください。")
+
+        else:
+            with st.spinner("AIが単語を解析しています..."):
+                try:
+                    client = genai.Client(api_key=api_key)
+
+                    prompt = """
+                    この画像から英単語と日本語の意味をすべて抜き出し、
+                    以下のJSONフォーマットのみで出力してください。
+                    余計な挨拶や説明は一切不要です。
+                    英単語はすべて半角の小文字に統一してください。
+
+                    [
+                        {"english": "apple", "japanese": "りんご"},
+                        {"english": "banana", "japanese": "バナナ"}
+                    ]
+                    """
+
+                    response = client.models.generate_content(
+                        model="gemini-3.5-flash",
+                        contents=[image, prompt]
+                    )
+
+                    clean_text = (
+                        response.text
+                        .replace("```json", "")
+                        .replace("```", "")
+                        .strip()
+                    )
+
+                    parsed_words = json.loads(clean_text)
+
+                    # QUESTIONSテーブルへ保存
+                    for item in parsed_words:
                         question_id = save_question(
                             subject="english",
-                            lesson=lesson_name,
+                            lesson=lesson_name.strip(),
                             source="image_ocr",
                             question=item["japanese"],
                             answer=item["english"],
                             mode="typing"
                         )
-                    
-                        # 学習履歴と結びつけるためquestion_idを保持
+
+                        # 後でSTUDY_HISTORYと結びつけるため保持
                         item["question_id"] = question_id
-                    
-                    # 🟢 画像読み込み時にも、ランダムがONなら即シャッフル
+
+                    # ランダムONならシャッフル
                     if st.session_state.shuffle_mode:
                         random.shuffle(parsed_words)
-                        
+
+                    # セッションへ保存
                     st.session_state.word_list = parsed_words
                     st.session_state.current_index = 0
                     st.session_state.wrong_words = []
@@ -118,8 +166,9 @@ if st.button("✨ 単語リストを読み込む"):
                     st.session_state.user_input = ""
                     st.session_state.round_num = 1
                     st.session_state.correct_count = 0
+
                     st.rerun()
-                    
+
                 except Exception as e:
                     st.error(f"読み込みエラー: {e}")
 
