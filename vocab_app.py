@@ -15,7 +15,6 @@ from database import (
 )
 
 
-
 # データベース初期化
 init_db()
 
@@ -118,19 +117,19 @@ if uploaded_file and not st.session_state.word_list:
 
                     parsed_words = json.loads(clean_text)
 
-                    # QUESTIONSテーブルへ保存
-                    for item in parsed_words:
-                        question_id = save_question(
-                            subject="english",
-                            lesson=lesson_name.strip(),
-                            source="image_ocr",
-                            question=item["japanese"],
-                            answer=item["english"],
-                            mode="typing"
-                        )
-                        
-                    # 後でSTUDY_HISTORYと結びつけるため保持
-                    item["question_id"] = question_id
+                                    # QUESTIONSテーブルへ保存
+                                    for item in parsed_words:
+                                        question_id = save_question(
+                                            subject="english",
+                                            lesson=lesson_name.strip(),
+                                            source="image_ocr",
+                                            question=item["japanese"],
+                                            answer=item["english"],
+                                            mode="typing"
+                                        )
+                                        
+                                    # 後でSTUDY_HISTORYと結びつけるため保持
+                                    item["question_id"] = question_id
 
                     # ランダムONならシャッフル
                     if st.session_state.shuffle_mode:
