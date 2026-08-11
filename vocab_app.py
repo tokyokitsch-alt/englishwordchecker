@@ -51,16 +51,26 @@ if shuffle_on != st.session_state.shuffle_mode:
         random.shuffle(st.session_state.word_list)
         st.rerun()
 
+
+# Lesson名の入力
+lesson_name = st.text_input(
+    "📚 Lesson名・教材名を入力してください",
+    placeholder="例：Lesson 3 & 道案内"
+)
+
 # 3. 単語リスト画像のアップロード
 uploaded_file = st.file_uploader("紙の単語リストの画像をアップロードしてください", type=["jpg", "jpeg", "png"])
+
 
 if uploaded_file and not st.session_state.word_list:
     image = Image.open(uploaded_file)
     st.image(image, caption="アップロードされた画像", use_container_width=True)
     
-    if st.button("✨ 単語リストを読み込む"):
-        if not api_key:
-            st.error("APIキーを入力してください。")
+if st.button("✨ 単語リストを読み込む"):
+    if not lesson_name.strip():
+        st.warning("Lesson名・教材名を入力してください。")
+    elif not api_key:
+        st.error("APIキーを入力してください。")
         else:
             with st.spinner("AIが単語を解析しています..."):
                 try:
@@ -87,7 +97,7 @@ if uploaded_file and not st.session_state.word_list:
                     for item in st.session_state.word_list:
                         question_id = save_question(
                             subject="english",
-                            lesson="",
+                            lesson=lesson_name,
                             source="image_ocr",
                             question=item["japanese"],
                             answer=item["english"],
