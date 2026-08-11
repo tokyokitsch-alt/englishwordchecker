@@ -14,7 +14,7 @@ from database import (
     save_study_history
 )
 
-に変更して
+
 
 # データベース初期化
 init_db()
