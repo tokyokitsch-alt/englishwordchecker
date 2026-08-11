@@ -61,39 +61,7 @@ lesson_name = st.text_input(
 # 3. 単語リスト画像のアップロード
 uploaded_file = st.file_uploader("紙の単語リストの画像をアップロードしてください", type=["jpg", "jpeg", "png"])
 
-
-if uploaded_file and not st.session_state.word_list:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="アップロードされた画像", use_container_width=True)
-    
-if st.button("✨ 単語リストを読み込む"):
-    if not lesson_name.strip():
-        st.warning("Lesson名・教材名を入力してください。")
-    elif not api_key:
-        st.error("APIキーを入力してください。")
-        else:
-            with st.spinner("AIが単語を解析しています..."):
-                try:
-                    client = genai.Client(api_key=api_key)
-                    
-                    prompt = """
-                    この画像から英単語と日本語の意味をすべて抜き出し、以下のJSONフォーマットのみで出力してください。余計な挨拶や説明は一切不要です。
-                    英単語はすべて半角の小文字に統一してください。
-                    [
-                        {"english": "apple", "japanese": "りんご"},
-                        {"english": "banana", "japanese": "バナナ"}
-                    ]
-                    """
-                    
-                    response = client.models.generate_content(
-                        model='gemini-3.5-flash',
-                        contents=[image, prompt]
-                    )
-                    
-                    clean_text = response.text.replace("```json", "").replace("```", "").strip()
-                    parsed_words = json.loads(clean_text)
-
-                    # 読み取った単語をQUESTIONSテーブルへ保存
+# 読み取った単語をQUESTIONSテーブルへ保存
 if uploaded_file and not st.session_state.word_list:
     image = Image.open(uploaded_file)
     st.image(
