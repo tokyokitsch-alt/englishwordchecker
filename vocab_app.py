@@ -7,10 +7,20 @@ from google import genai
 from PIL import Image
 from gtts import gTTS
 
-from database import init_db, save_question
+from database import (
+    init_db,
+    save_question,
+    get_or_create_user,
+    save_study_history
+)
+
+に変更して
 
 # データベース初期化
 init_db()
+
+# 現在の学習者を設定
+user_id = get_or_create_user("user01")
 
 st.title("📝 英単語タイピングゲーム")
 st.write("英単語のイメージをアップすると、タイピングがはじまります。日本語の意味を見て、正しい英単語をタイピングしよう！")
@@ -180,18 +190,34 @@ if st.session_state.word_list:
             submit_button = st.form_submit_button(label="🎯 判定する" if not st.session_state.checked else "🔒 判定済み")
 
         # 判定ボタンが押されたときの処理
+
         if submit_button and not st.session_state.checked:
             if user_ans == "":
-                st.warning("文字を入力してください。")
+                st.warning("文字を入力してください.")
             else:
                 st.session_state.user_input = user_ans
                 st.session_state.checked = True
-                
-                correct_ans = current_word['english'].strip().lower()
-                if user_ans == correct_ans:
-                    st.session_state.correct_count += 1
-                st.rerun()
         
+                correct_ans = current_word["english"].strip().lower()
+        
+                # 正解・不正解を判定
+                if user_ans == correct_ans:
+                    result = "correct"
+                    st.session_state.correct_count += 1
+                else:
+                    result = "wrong"
+        
+                # 学習履歴をデータベースへ保存
+                save_study_history(
+                    user_id=user_id,
+                    question_id=current_word["question_id"],
+                    result=result,
+                    user_answer=user_ans,
+                    mode="typing",
+                    study_round=st.session_state.round_num
+                )
+        
+                st.rerun()
         # 判定後の表示と「次の問題」ボタン
         if st.session_state.checked:
             correct_ans = current_word['english'].strip().lower()
