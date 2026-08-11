@@ -11,7 +11,8 @@ from database import (
     init_db,
     save_question,
     get_or_create_user,
-    save_study_history
+    save_study_history,
+    get_study_history
 )
 
 
@@ -278,3 +279,21 @@ if st.session_state.word_list:
                 st.session_state.checked = False
                 st.session_state.user_input = ""
                 st.rerun()
+
+
+
+# -------------------------
+# DB確認用
+# -------------------------
+st.divider()
+
+with st.expander("🔍 DBの学習履歴を確認"):
+    history = get_study_history()
+
+    if history:
+        st.write(f"保存されている学習履歴：{len(history)}件")
+
+        for row in history:
+            st.write(row)
+    else:
+        st.info("まだ学習履歴は保存されていません。")
