@@ -263,3 +263,82 @@ def get_due_reviews(user_id):
     conn.close()
 
     return rows
+
+def get_lesson_progress(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            q.lesson,
+            COUNT(q.id) AS total_questions,
+
+            SUM(
+                CASE
+                    WHEN latest.result = 'correct' THEN 1
+                    ELSE 0
+                END
+            ) AS mastered,
+
+            SUM(
+                CASE
+                    WHEN latest.result = 'wrong' THEN 1
+                    ELSE 0
+                END
+            ) AS needs_review,
+
+            SUM(
+                CASE
+                    WHEN latest.result IS NULL THEN 1
+                    ELSE 0
+                END
+            ) AS not_studied
+
+        FROM questions AS q
+
+        LEFT JOIN (
+            SELECT sh1.question_id, sh1.result
+            FROM study_history AS sh1
+            WHERE sh1.user_id = ?
+              AND sh1.id = (
+                  SELECT MAX(sh2.id)
+                  FROM study_history AS sh2
+                  WHERE sh2.user_id = sh1.user_id
+                    AND sh2.question_id = sh1.question_id
+              )
+        ) AS latest
+            ON q.id = latest.question_id
+
+        GROUP BY q.lesson
+        ORDER BY q.lesson
+    """, (user_id,))
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    # 達成率を計算
+    progress = []
+
+    for row in rows:
+        lesson = row[0]
+        total = row[1]
+        mastered = row[2] or 0
+        needs_review = row[3] or 0
+        not_studied = row[4] or 0
+
+        if total > 0:
+            progress_percent = int((mastered / total) * 100)
+        else:
+            progress_percent = 0
+
+        progress.append({
+            "lesson": lesson,
+            "total": total,
+            "mastered": mastered,
+            "needs_review": needs_review,
+            "not_studied": not_studied,
+            "progress_percent": progress_percent
+        })
+
+    return progress
