@@ -28,6 +28,33 @@ due_reviews = get_due_reviews(user_id)
 # 今日の復習問題を表示
 if due_reviews:
     st.warning(f"🔔 今日の復習があります：{len(due_reviews)}問")
+
+    if st.button("▶ 復習をはじめる"):
+        review_words = []
+
+        for row in due_reviews:
+            review_words.append({
+                "question_id": row[0],
+                "lesson": row[1],
+                "japanese": row[2],
+                "english": row[3]
+            })
+
+        # ランダム設定がONなら復習問題もシャッフル
+        if st.session_state.shuffle_mode:
+            random.shuffle(review_words)
+
+        # 通常のタイピングゲームへ渡す
+        st.session_state.word_list = review_words
+        st.session_state.current_index = 0
+        st.session_state.wrong_words = []
+        st.session_state.checked = False
+        st.session_state.user_input = ""
+        st.session_state.round_num = 1
+        st.session_state.correct_count = 0
+
+        st.rerun()
+
 else:
     st.info("📚 今日の復習問題はありません")
     
