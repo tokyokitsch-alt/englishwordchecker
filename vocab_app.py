@@ -234,16 +234,25 @@ if st.session_state.word_list:
                 st.session_state.user_input = user_ans
                 st.session_state.checked = True
         
-                correct_ans = current_word["english"].strip().lower()
-        
-                # 正解・不正解を判定
-                if user_ans == correct_ans:
-                    result = "correct"
-                    review_date = None
-                    st.session_state.correct_count += 1
-                else:
-                    result = "wrong"
-                    review_date = (datetime.now() + timedelta(days=3)).date().isoformat()
+            correct_ans = current_word["english"].strip().lower()
+            
+            # 「autumn / fall」のような複数の正解候補に対応
+            correct_options = [
+                option.strip()
+                for option in correct_ans.split("/")
+            ]
+            
+            # 元の表記そのものも正解にする
+            correct_options.append(correct_ans)
+            
+            # 正解・不正解を判定
+            if user_ans in correct_options:
+                result = "correct"
+                review_date = None
+                st.session_state.correct_count += 1
+            else:
+                result = "wrong"
+                review_date = (datetime.now() + timedelta(days=3)).date().isoformat()
         
                 # 学習履歴をデータベースへ保存
                 save_study_history(
