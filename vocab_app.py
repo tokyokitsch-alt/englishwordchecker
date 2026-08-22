@@ -225,85 +225,97 @@ if st.session_state.word_list:
             
             submit_button = st.form_submit_button(label="🎯 判定する" if not st.session_state.checked else "🔒 判定済み")
 
-# 判定ボタンが押されたときの処理
-if submit_button and not st.session_state.checked:
-    if user_ans == "":
-        st.warning("文字を入力してください.")
-    else:
-        st.session_state.user_input = user_ans
-        st.session_state.checked = True
+        # 判定ボタンが押されたときの処理
+        if submit_button and not st.session_state.checked:
+            if user_ans == "":
+                st.warning("文字を入力してください。")
+            else:
+                st.session_state.user_input = user_ans
+                st.session_state.checked = True
 
-        correct_ans = current_word["english"].strip().lower()
+                correct_ans = current_word["english"].strip().lower()
 
-        # 「autumn / fall」のような複数の正解候補に対応
-        correct_options = [
-            option.strip()
-            for option in correct_ans.split("/")
-        ]
+                # 「autumn / fall」のような複数の正解候補に対応
+                correct_options = [
+                    option.strip()
+                    for option in correct_ans.split("/")
+                ]
 
-        # 元の表記そのものも正解にする
-        correct_options.append(correct_ans)
+                # 元の表記そのものも正解にする
+                correct_options.append(correct_ans)
 
-        # 正解・不正解を判定
-        if user_ans in correct_options:
-            result = "correct"
-            review_date = None
-            st.session_state.correct_count += 1
-        else:
-            result = "wrong"
-            review_date = (
-                datetime.now() + timedelta(days=3)
-            ).date().isoformat()
+                # 正解・不正解を判定
+                if user_ans in correct_options:
+                    result = "correct"
+                    review_date = None
+                    st.session_state.correct_count += 1
+                else:
+                    result = "wrong"
+                    review_date = (
+                        datetime.now() + timedelta(days=3)
+                    ).date().isoformat()
 
-        # 学習履歴をデータベースへ保存
-        save_study_history(
-            user_id=user_id,
-            question_id=current_word["question_id"],
-            result=result,
-            user_answer=user_ans,
-            mode="typing",
-            study_round=st.session_state.round_num,
-            review_date=review_date
-        )
+                # 学習履歴をデータベースへ保存
+                save_study_history(
+                    user_id=user_id,
+                    question_id=current_word["question_id"],
+                    result=result,
+                    user_answer=user_ans,
+                    mode="typing",
+                    study_round=st.session_state.round_num,
+                    review_date=review_date
+                )
 
-        st.rerun()
+                st.rerun()
+
         # 判定後の表示と「次の問題」ボタン
         if st.session_state.checked:
-            correct_ans = current_word['english'].strip().lower()
-            
-        correct_options = [
-            option.strip()
-            for option in correct_ans.split("/")
-        ]
-        
-        correct_options.append(correct_ans)
-        
-        if st.session_state.user_input in correct_options:
-            st.success(f"🎉 正解！ ⭐⭐⭐ 【 {current_word['english']} 】 ⭐⭐⭐")
-        else:
-            st.error(f"❌ 残念！ 正解は 【 {current_word['english']} 】 でした。")
-            if current_word not in st.session_state.wrong_words:
-                st.session_state.wrong_words.append(current_word)
-                    
+            correct_ans = current_word["english"].strip().lower()
+
+            # 複数の正解候補に対応
+            correct_options = [
+                option.strip()
+                for option in correct_ans.split("/")
+            ]
+
+            correct_options.append(correct_ans)
+
+            if st.session_state.user_input in correct_options:
+                st.success(
+                    f"🎉 正解！ ⭐⭐⭐ 【 {current_word['english']} 】 ⭐⭐⭐"
+                )
+            else:
+                st.error(
+                    f"❌ 残念！ 正解は 【 {current_word['english']} 】 でした。"
+                )
+
+                if current_word not in st.session_state.wrong_words:
+                    st.session_state.wrong_words.append(current_word)
+
             # 音声読み上げ
             try:
-                tts = gTTS(text=current_word['english'], lang='en')
+                tts = gTTS(text=current_word["english"], lang="en")
                 sound_file = io.BytesIO()
                 tts.write_to_fp(sound_file)
                 sound_file.seek(0)
-                st.audio(sound_file, format="audio/mp3", autoplay=True)
+                st.audio(
+                    sound_file,
+                    format="audio/mp3",
+                    autoplay=True
+                )
             except Exception:
                 pass
-            
+
             with st.form(key=f"next_form_{idx}"):
-                next_button = st.form_submit_button(label="➡️ 次の問題へ (Enter)")
+                next_button = st.form_submit_button(
+                    label="➡️ 次の問題へ (Enter)"
+                )
+
                 if next_button:
                     st.session_state.current_index += 1
                     st.session_state.checked = False
                     st.session_state.user_input = ""
                     st.rerun()
-                
-    else:
         # 周回リトライ処理
         if st.session_state.wrong_words:
             final_accuracy = int((st.session_state.correct_count / total_words) * 100)
