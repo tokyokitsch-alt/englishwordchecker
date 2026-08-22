@@ -316,17 +316,29 @@ if st.session_state.word_list:
                     st.session_state.checked = False
                     st.session_state.user_input = ""
                     st.rerun()
+        else:
         # 周回リトライ処理
         if st.session_state.wrong_words:
-            final_accuracy = int((st.session_state.correct_count / total_words) * 100)
-            st.warning(f"📝 第 {st.session_state.round_num} 週目が終了！ 正解率: {final_accuracy}%")
-            st.write(f"間違えた単語が {len(st.session_state.wrong_words)} 問あります。覚えるまでもう一度チャレンジしよう！")
-            
+            final_accuracy = int(
+                (st.session_state.correct_count / total_words) * 100
+            )
+
+            st.warning(
+                f"📝 第 {st.session_state.round_num} 週目が終了！ "
+                f"正解率: {final_accuracy}%"
+            )
+
+            st.write(
+                f"間違えた単語が {len(st.session_state.wrong_words)} 問あります。"
+                "覚えるまでもう一度チャレンジしよう！"
+            )
+
             if st.button("🔄 間違えた単語だけで再挑戦！"):
                 next_words = list(st.session_state.wrong_words)
+
                 if st.session_state.shuffle_mode:
                     random.shuffle(next_words)
-                    
+
                 st.session_state.word_list = next_words
                 st.session_state.wrong_words = []
                 st.session_state.current_index = 0
@@ -334,11 +346,16 @@ if st.session_state.word_list:
                 st.session_state.round_num += 1
                 st.session_state.checked = False
                 st.session_state.user_input = ""
+
                 st.rerun()
+
         else:
             st.balloons()
-            st.subheader("🎉 全問正解！完璧にマスターしました！お疲れ様でした！")
-            
+
+            st.subheader(
+                "🎉 全問正解！完璧にマスターしました！お疲れ様でした！"
+            )
+
             if st.button("🔄 もう一度新しい紙からやる"):
                 st.session_state.word_list = []
                 st.session_state.wrong_words = []
@@ -347,8 +364,8 @@ if st.session_state.word_list:
                 st.session_state.round_num = 1
                 st.session_state.checked = False
                 st.session_state.user_input = ""
-                st.rerun()
 
+                st.rerun()
 # -------------------------
 # Lesson別 学習状況
 # -------------------------
