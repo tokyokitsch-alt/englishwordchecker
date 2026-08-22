@@ -215,7 +215,7 @@ if st.session_state.word_list:
                     st.session_state.correct_count += 1
                 else:
                     result = "wrong"
-                    review_date = datetime.now().date().isoformat()
+                    review_date = (datetime.now() + timedelta(days=3)).date().isoformat()
         
                 # 学習履歴をデータベースへ保存
                 save_study_history(
