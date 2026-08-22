@@ -316,7 +316,7 @@ if st.session_state.word_list:
                     st.session_state.checked = False
                     st.session_state.user_input = ""
                     st.rerun()
-        else:
+    else:
         # 周回リトライ処理
         if st.session_state.wrong_words:
             final_accuracy = int(
