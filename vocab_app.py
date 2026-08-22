@@ -22,6 +22,15 @@ init_db()
 # 現在の学習者を設定
 user_id = get_or_create_user("user01")
 
+# 今日が復習日の問題を取得
+due_reviews = get_due_reviews(user_id)
+
+# 今日の復習問題を表示
+if due_reviews:
+    st.warning(f"🔔 今日の復習があります：{len(due_reviews)}問")
+else:
+    st.info("📚 今日の復習問題はありません")
+    
 st.title("📝 英単語タイピングゲーム")
 st.write("英単語のイメージをアップすると、タイピングがはじまります。日本語の意味を見て、正しい英単語をタイピングしよう！")
 
@@ -206,7 +215,7 @@ if st.session_state.word_list:
                     st.session_state.correct_count += 1
                 else:
                     result = "wrong"
-                    review_date = (datetime.now() + timedelta(days=3)).date().isoformat()
+                    review_date = datetime.now().date().isoformat()
         
                 # 学習履歴をデータベースへ保存
                 save_study_history(
