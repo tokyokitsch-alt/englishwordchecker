@@ -209,6 +209,7 @@ def get_study_history():
             study_history.result,
             study_history.user_answer,
             study_history.studied_at,
+            study_history.review_date,
             study_history.study_round
         FROM study_history
         JOIN users
