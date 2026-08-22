@@ -24,7 +24,6 @@ user_id = get_or_create_user("user01")
 
 # 今日が復習日の問題を取得
 due_reviews = get_due_reviews(user_id)
-
 # 今日の復習問題を表示
 if due_reviews:
     st.warning(f"🔔 今日の復習があります：{len(due_reviews)}問")
