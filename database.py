@@ -243,6 +243,12 @@ def get_due_reviews(user_id):
         JOIN questions
             ON study_history.question_id = questions.id
         WHERE study_history.user_id = ?
+          AND study_history.id = (
+              SELECT MAX(sh2.id)
+              FROM study_history AS sh2
+              WHERE sh2.user_id = study_history.user_id
+                AND sh2.question_id = study_history.question_id
+          )
           AND study_history.result = 'wrong'
           AND study_history.review_date IS NOT NULL
           AND study_history.review_date <= ?
