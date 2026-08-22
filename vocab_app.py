@@ -14,7 +14,8 @@ from database import (
     get_or_create_user,
     save_study_history,
     get_study_history,
-    get_due_reviews
+    get_due_reviews,
+    get_lesson_progress
 )
 
 # データベース初期化
@@ -319,7 +320,48 @@ if st.session_state.word_list:
                 st.session_state.user_input = ""
                 st.rerun()
 
+# -------------------------
+# Lesson別 学習状況
+# -------------------------
 
+st.divider()
+st.header("📊 Lesson別 学習状況")
+
+lesson_progress = get_lesson_progress(user_id)
+
+if lesson_progress:
+
+    for lesson in lesson_progress:
+
+        lesson_name = lesson["lesson"] or "Lesson名なし"
+        total = lesson["total"]
+        mastered = lesson["mastered"]
+        needs_review = lesson["needs_review"]
+        not_studied = lesson["not_studied"]
+        progress_percent = lesson["progress_percent"]
+
+        st.subheader(f"📚 {lesson_name}")
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric("登録問題", f"{total}問")
+
+        with col2:
+            st.metric("できる", f"{mastered}問")
+
+        with col3:
+            st.metric("要復習", f"{needs_review}問")
+
+        with col4:
+            st.metric("未学習", f"{not_studied}問")
+
+        st.progress(progress_percent / 100)
+
+        st.write(f"達成度：**{progress_percent}%**")
+
+else:
+    st.info("まだ学習データがありません。")
 
 # -------------------------
 # DB確認用
