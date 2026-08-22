@@ -224,3 +224,36 @@ def get_study_history():
     conn.close()
 
     return rows
+
+
+def get_due_reviews(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    today = datetime.now().date().isoformat()
+
+    cursor.execute("""
+        SELECT
+            questions.id,
+            questions.lesson,
+            questions.question,
+            questions.answer,
+            study_history.review_date
+        FROM study_history
+        JOIN questions
+            ON study_history.question_id = questions.id
+        WHERE study_history.user_id = ?
+          AND study_history.result = 'wrong'
+          AND study_history.review_date IS NOT NULL
+          AND study_history.review_date <= ?
+        ORDER BY study_history.review_date ASC
+    """, (
+        user_id,
+        today
+    ))
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return rows
