@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import streamlit as st
 import os
 import json
@@ -201,9 +202,11 @@ if st.session_state.word_list:
                 # 正解・不正解を判定
                 if user_ans == correct_ans:
                     result = "correct"
+                    review_date = None
                     st.session_state.correct_count += 1
                 else:
                     result = "wrong"
+                    review_date = (datetime.now() + timedelta(days=3)).date().isoformat()
         
                 # 学習履歴をデータベースへ保存
                 save_study_history(
@@ -212,7 +215,8 @@ if st.session_state.word_list:
                     result=result,
                     user_answer=user_ans,
                     mode="typing",
-                    study_round=st.session_state.round_num
+                    study_round=st.session_state.round_num,
+                    review_date=review_date
                 )
         
                 st.rerun()
