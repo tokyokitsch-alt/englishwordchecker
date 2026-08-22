@@ -13,7 +13,8 @@ from database import (
     save_question,
     get_or_create_user,
     save_study_history,
-    get_study_history
+    get_study_history,
+    get_due_reviews
 )
 
 # データベース初期化
