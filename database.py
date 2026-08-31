@@ -234,6 +234,54 @@ def get_due_reviews(user_id):
 
     cursor.execute("""
         SELECT
+            q.id,
+            q.lesson,
+            q.question,
+            q.answer,
+            MIN(sh.review_date) AS review_date
+        FROM study_history AS sh
+
+        JOIN questions AS q
+            ON sh.question_id = q.id
+
+        WHERE sh.user_id = ?
+          AND sh.result = 'wrong'
+          AND sh.review_date IS NOT NULL
+          AND sh.review_date <= ?
+
+          AND NOT EXISTS (
+              SELECT 1
+              FROM study_history AS sh2
+              WHERE sh2.user_id = sh.user_id
+                AND sh2.question_id = sh.question_id
+                AND sh2.id > sh.id
+                AND DATE(sh2.studied_at) >= sh.review_date
+          )
+
+        GROUP BY
+            q.id,
+            q.lesson,
+            q.question,
+            q.answer
+
+        ORDER BY review_date ASC
+    """, (
+        user_id,
+        today
+    ))
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return rows
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    today = datetime.now().date().isoformat()
+
+    cursor.execute("""
+        SELECT
             questions.id,
             questions.lesson,
             questions.question,
