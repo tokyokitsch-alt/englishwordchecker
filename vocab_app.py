@@ -28,9 +28,10 @@ user_id = get_or_create_user("user01")
 due_reviews = get_due_reviews(user_id)
 # 今日の復習問題を表示
 if due_reviews:
-    st.warning(f"🔔 今日の復習があります：{len(due_reviews)}問")
+if due_reviews:
+    st.warning(f"🔔 3日後復習の対象があります：{len(due_reviews)}問")
 
-    if st.button("▶ 復習をはじめる"):
+    if st.button("▶ 3日後復習をはじめる"):
         review_words = []
 
         for row in due_reviews:
@@ -41,11 +42,9 @@ if due_reviews:
                 "english": row[3]
             })
 
-        # ランダム設定がONなら復習問題もシャッフル
         if st.session_state.shuffle_mode:
             random.shuffle(review_words)
 
-        # 通常のタイピングゲームへ渡す
         st.session_state.word_list = review_words
         st.session_state.current_index = 0
         st.session_state.wrong_words = []
@@ -57,7 +56,7 @@ if due_reviews:
         st.rerun()
 
 else:
-    st.info("📚 今日の復習問題はありません")
+    st.info("📅 今日が期限の3日後復習はありません")
     
 st.title("📝 英単語タイピングゲーム")
 st.write("英単語のイメージをアップすると、タイピングがはじまります。日本語の意味を見て、正しい英単語をタイピングしよう！")
@@ -333,7 +332,9 @@ if st.session_state.word_list:
                 "覚えるまでもう一度チャレンジしよう！"
             )
 
-            if st.button("🔄 間違えた単語だけで再挑戦！"):
+            if st.button(
+                f"🔥 まだ覚えていない {len(st.session_state.wrong_words)} 問を続けて練習する"
+            ):
                 next_words = list(st.session_state.wrong_words)
 
                 if st.session_state.shuffle_mode:
