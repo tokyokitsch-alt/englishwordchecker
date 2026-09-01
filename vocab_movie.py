@@ -75,49 +75,152 @@ def create_drive_card(japanese, main_text, is_answer=False):
 # --------------------------------------------------
 def generate_drive_video(word_list):
     """単語リストから車内学習用MP4動画を生成"""
+
     clips = []
     temp_files = []
 
-    for idx, item in enumerate(word_list):
-        english = item["english"].strip().lower()
-        japanese = item["japanese"].strip()
+    # ------------------------------------------
+    # ① 動画生成前にデータをチェック
+    # ------------------------------------------
+    missing_words = []
 
-        # 音声1: 日本語の読み上げ (例: 「りんご」)
-        tts_ja = gTTS(text=japanese, lang='ja')
-        f_ja = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+    for idx, item in enumerate(word_list):
+
+        english = str(item.get("english", "") or "").strip()
+        japanese = str(item.get("japanese", "") or "").strip()
+
+        if not english or not japanese:
+            missing_words.append(
+                f"{idx + 1}. {english if english else '【英語なし】'}"
+            )
+
+    if missing_words:
+        raise ValueError(
+            "日本語または英語が空欄の単語があります：\n"
+            + "\n".join(missing_words)
+        )
+
+    # ------------------------------------------
+    # ② 問題がなければ動画生成
+    # ------------------------------------------
+    for idx, item in enumerate(word_list):
+
+        english = str(item.get("english", "") or "").strip().lower()
+        japanese = str(item.get("japanese", "") or "").strip()
+
+        # 日本語音声
+        tts_ja = gTTS(
+            text=japanese,
+            lang="ja"
+        )
+
+        f_ja = tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".mp3"
+        )
+
         tts_ja.save(f_ja.name)
         temp_files.append(f_ja.name)
+
         audio_ja = AudioFileClip(f_ja.name)
 
-        # 音声2: 英語の読み上げ (例: "apple")
-        tts_en = gTTS(text=english, lang='en', slow=False)
-        f_en = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+        # 英語音声
+        tts_en = gTTS(
+            text=english,
+            lang="en",
+            slow=False
+        )
+
+        f_en = tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".mp3"
+        )
+
         tts_en.save(f_en.name)
         temp_files.append(f_en.name)
+
         audio_en = AudioFileClip(f_en.name)
 
-        # --- 1. 問題フェーズ ---
-        # 日本語を声で流しつつ、画面には「日本語」と「伏字(_ _ _)」を表示（約3秒）
-        mask_text = " ".join(["_"] * len(english))
-        q_img = create_drive_card(japanese, mask_text, is_answer=False)
-        q_duration = max(3.0, audio_ja.duration + 2.0) # 日本語音声＋少し考える時間
-        q_clip = ImageClip(q_img).set_duration(q_duration).set_audio(audio_ja)
+        # ------------------------------------------
+        # 問題フェーズ
+        # ------------------------------------------
 
-        # --- 2. 正解フェーズ ---
-        # 英語の発音を流しつつ、画面に大きな「英単語」を表示（約3秒）
-        spaced_word = " ".join(list(english))
-        a_img = create_drive_card(japanese, spaced_word, is_answer=True)
-        a_duration = max(3.0, audio_en.duration + 1.0)
-        a_clip = ImageClip(a_img).set_duration(a_duration).set_audio(audio_en)
+        mask_text = " ".join(
+            ["_"] * len(english)
+        )
 
-        clips.extend([q_clip, a_clip])
+        q_img = create_drive_card(
+            japanese,
+            mask_text,
+            is_answer=False
+        )
 
-    # 1本の動画に結合
-    final_clip = concatenate_videoclips(clips, method="compose")
-    output_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    final_clip.write_videofile(output_video.name, fps=24, codec="libx264", audio_codec="aac")
+        q_duration = max(
+            3.0,
+            audio_ja.duration + 2.0
+        )
 
-    # 一時ファイルの削除
+        q_clip = (
+            ImageClip(q_img)
+            .set_duration(q_duration)
+            .set_audio(audio_ja)
+        )
+
+        # ------------------------------------------
+        # 正解フェーズ
+        # ------------------------------------------
+
+        spaced_word = " ".join(
+            list(english)
+        )
+
+        a_img = create_drive_card(
+            japanese,
+            spaced_word,
+            is_answer=True
+        )
+
+        a_duration = max(
+            3.0,
+            audio_en.duration + 1.0
+        )
+
+        a_clip = (
+            ImageClip(a_img)
+            .set_duration(a_duration)
+            .set_audio(audio_en)
+        )
+
+        clips.extend([
+            q_clip,
+            a_clip
+        ])
+
+    # ------------------------------------------
+    # ③ 1本の動画に結合
+    # ------------------------------------------
+
+    final_clip = concatenate_videoclips(
+        clips,
+        method="compose"
+    )
+
+    output_video = tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=".mp4"
+    )
+
+    final_clip.write_videofile(
+        output_video.name,
+        fps=24,
+        codec="libx264",
+        audio_codec="aac"
+    )
+
+    # ------------------------------------------
+    # ④ 一時ファイル削除
+    # ------------------------------------------
+
     for tf in temp_files:
         if os.path.exists(tf):
             os.remove(tf)
@@ -140,7 +243,13 @@ if uploaded_file and not st.session_state.word_list:
                     client = genai.Client(api_key=api_key)
                     prompt = """
                     この画像から英単語と日本語の意味をすべて抜き出し、以下のJSONフォーマットのみで出力してください。
-                    英単語はすべて半角の小文字に統一してください。
+                    【重要】
+                    ・英単語はすべて半角の小文字にしてください。
+                    ・日本語の意味を空欄にしないでください。
+                    ・画像内の日本語が読み取りにくい場合でも、
+                    英単語から一般的な中学生向けの日本語訳を補ってください。
+                    ・english または japanese を空文字 "" にしてはいけません。
+                    ・説明文は出力せず、JSONだけを出力してください。
                     [
                         {"english": "apple", "japanese": "りんご"},
                         {"english": "banana", "japanese": "バナナ"}
